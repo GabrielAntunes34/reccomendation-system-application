@@ -10,3 +10,18 @@ Trabalho final extencionista da disciplina de sistemas de recomendação SCC0284
 ## Descrição do projeto
 
 ## Como rodar
+
+### Backend
+
+- Executar docker
+  ```docker compose up -d```
+- Verificar se os containers foram criados
+  ```docker compose ps```
+- Acesso direto ao postgress
+  ```docker exec -it postgres_sr psql -U $POSTGRES_USER -d $POSTGRES_DB```
+
+**pgAdmin:**
+- Site: [http://localhost:5051/](http://localhost:5051/)
+- Login: admin@example.com
+- Senha: admin123
+
