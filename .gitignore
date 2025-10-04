@@ -1,3 +1,7 @@
 # Arquivos específicos de sistema
 .DS_Store
+
+# Arquivos de ambiente
 *.env
+sql
+.venv

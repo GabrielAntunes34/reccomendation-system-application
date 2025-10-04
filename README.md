@@ -25,3 +25,20 @@ Trabalho final extencionista da disciplina de sistemas de recomendação SCC0284
 - Login: admin@example.com
 - Senha: admin123
 
+- Criar o venv do python
+  `python3 -m venv .venv`
+- Entrar no venv
+  `source .venv/bin/activate`
+- Installar as dependencias
+  `pip install -r requirements.txt`
+
+**Observações:**
+
+1. Se instalar alguma biblioteca a mais na .venv, após a instalação é necessário jogar seus dados em `requirements`:
+
+`pip freeze > requirements.txt`
+
+2. Para sair do ambiente virtual do python
+
+`deactivate`
+
