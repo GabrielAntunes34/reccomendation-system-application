@@ -42,3 +42,6 @@ Trabalho final extencionista da disciplina de sistemas de recomendação SCC0284
 
 `deactivate`
 
+**Para rodar a API**
+
+`uvicorn main:app --host localhost --port 3000`
