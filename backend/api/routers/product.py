@@ -15,7 +15,8 @@ router = APIRouter()
 
 @router.post("/", response_model=Product)
 async def create(product: ProductCreate, db: AsyncSession = Depends(get_db)):
-    await create_product(db, product)
+    product = await create_product(db, product)
+    return product
 
 
 @router.get("/", response_model=list[Product])

@@ -2,8 +2,13 @@ from contextlib import asynccontextmanager
 
 from core.bdConnection import Base, engine
 from fastapi import FastAPI
+
+# Importando as models
 from models import collection, product
+
+# Importando os routers
 from routers.product import router as product_router
+from routers.user import router as user_router
 
 
 @asynccontextmanager
@@ -13,11 +18,12 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     print("== BD INICIALIZADA ==")
 
-    yield  # <-- entrega o controle à aplicação
+    # Entregando o controle para a aplicação
+    yield
 
-    # Executado no shutdown (opcional)
+    # Executado no shutdown
     await engine.dispose()
-    print("== BD CONECTADA A API ==")
+    print("== BD DESCONECTADA ==")
 
 
 # Instanciando a API
@@ -28,3 +34,4 @@ app = FastAPI(
 
 # Rotas da API
 app.include_router(product_router, prefix="/product", tags=["Products"])
+app.include_router(user_router, prefix="/user", tags=["User"])

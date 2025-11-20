@@ -31,7 +31,7 @@ async def get_product_by_id(db: AsyncSession, id: int):
 
 async def delete_product(db: AsyncSession, id: int):
     """Controller da rota que deleta um prodto da base de dados"""
-    product = get_product_by_id(db, id)
+    product = await get_product_by_id(db, id)
 
     if not product:
         return None

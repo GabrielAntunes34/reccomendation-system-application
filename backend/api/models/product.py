@@ -14,5 +14,5 @@ class Product(Base):
     size = Column(String, nullable=False)
     description = Column(String, nullable=False)
     image = Column(String, nullable=False)
-    model = Column(Integer, nullable=False)
+    model = Column(String, nullable=False)
     collection_id = Column(Integer, ForeignKey("collections.id"), nullable=False)

@@ -9,5 +9,11 @@ Este arquivo mantém algumas mudanças e decisões nao documentadas formamlemte
 
 ### Alterações em interaction
 
-- Adcionar atributo liked
-- Adcionar mais métricas
+Tabela completamente reformulada para conter esses atributos:
+```
+User_id
+Product_id
+Viewed: num
+Liked: bool
+Contacted: bool
+```
