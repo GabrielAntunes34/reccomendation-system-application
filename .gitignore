@@ -6,3 +6,10 @@
 sql
 .venv
 venv
+
+# Dependencias python
+__pycache__/
+
+# Arquivos arbitrários
+*.tmp
+*.out
