@@ -1,22 +1,22 @@
 from decouple import config
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import declarative_base
 
-# Criando a URL que conecta ao banco de dados
+# Criando a URL que conecta ao banco de dados (config esperaria uma variável de ambiente)
 # DATABASE_URL = config("postgresql+psycopg://user:pass@localhost:5434/aeldb")
 DATABASE_URL = "postgresql+psycopg://user:pass@localhost:5434/aeldb"
-# Exemplo:
-# postgresql+psycopg2://user:password@localhost:5432/meubanco
 
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Criando o conector do BD e sua sessão assíncrons
+engine = create_async_engine(DATABASE_URL)
+
+AsyncSessionLocal = async_sessionmaker(
+    engine, expire_on_commit=False, class_=AsyncSession
+)
+
 Base = declarative_base()
 
 
-# Função auxiliar para gerenciar a conexão com o BD
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# Função auxiliar para gerenciar a conexão com o BD nos routers
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        yield session

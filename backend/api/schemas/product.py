@@ -17,6 +17,12 @@ class ProductBase(BaseModel):
     collection_id: int
 
 
+class ProductCreate(ProductBase):
+    """Classe para a utilização dos produtos em requisições POST"""
+
+    pass
+
+
 class Product(ProductBase):
     """Classe do tipo Produto para ser conectar com as models do ORM"""
 
