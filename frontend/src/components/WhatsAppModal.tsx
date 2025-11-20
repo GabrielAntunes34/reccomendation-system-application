@@ -10,11 +10,15 @@ interface WhatsAppModalProps {
 }
 
 export function WhatsAppModal({ open, onSubmit }: WhatsAppModalProps) {
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("whatsapp_phone") ?? "";
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (phone.trim()) {
+      localStorage.setItem("whatsapp_phone", phone);
       onSubmit(phone);
     }
   };

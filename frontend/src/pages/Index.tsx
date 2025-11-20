@@ -14,10 +14,14 @@ import {
 } from "@/components/ui/carousel";
 
 const Index = () => {
-  const [showWhatsAppModal, setShowWhatsAppModal] = useState(true);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !localStorage.getItem("whatsapp_phone");
+  });
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const handlePhoneSubmit = (phone: string) => {
+    localStorage.setItem("whatsapp_phone", phone);
     setShowWhatsAppModal(false);
     console.log("WhatsApp saved:", phone);
   };
