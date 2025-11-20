@@ -145,7 +145,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSubmit }: Pro
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
-                  className="cursor-pointer"
+                  className="cursor-pointer hover:border-primary/40 transition-smooth"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Ou cole uma URL de imagem abaixo
@@ -154,7 +154,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSubmit }: Pro
                   placeholder="https://..."
                   value={formData.image}
                   onChange={(e:any) => setFormData({ ...formData, image: e.target.value })}
-                  className="mt-2"
+                  className="mt-2 hover:border-primary/40 transition-smooth"
                 />
               </div>
             </div>
@@ -168,6 +168,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSubmit }: Pro
                 id="name"
                 value={formData.name}
                 onChange={(e:any) => setFormData({ ...formData, name: e.target.value })}
+                className="hover:border-primary/40 transition-smooth"
                 required
               />
             </div>
@@ -180,6 +181,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSubmit }: Pro
                 step="0.01"
                 value={formData.price}
                 onChange={(e:any) => setFormData({ ...formData, price: e.target.value })}
+                className="hover:border-primary/40 transition-smooth"
                 required
               />
             </div>
@@ -191,6 +193,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSubmit }: Pro
                 value={formData.category}
                 onChange={(e:any) => setFormData({ ...formData, category: e.target.value })}
                 placeholder="Ex: Calçados"
+                className="hover:border-primary/40 transition-smooth"
                 required
               />
             </div>
@@ -202,6 +205,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSubmit }: Pro
                 value={formData.collection}
                 onChange={(e:any) => setFormData({ ...formData, collection: e.target.value })}
                 placeholder="Ex: Novidades"
+                className="hover:border-primary/40 transition-smooth"
               />
             </div>
 

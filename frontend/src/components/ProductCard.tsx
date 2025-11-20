@@ -1,7 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { isFavorite as isFavoriteStored, toggleFavorite } from "@/utils/favorites";
 
 export interface Product {
   id: string;
@@ -23,6 +24,10 @@ interface ProductCardProps {
 export function ProductCard({ product, onClick }: ProductCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
 
+  useEffect(() => {
+    setIsFavorite(isFavoriteStored(product.id));
+  }, [product.id]);
+
   return (
     <Card 
       className="group cursor-pointer overflow-hidden border-border/50 hover:border-primary/50 transition-smooth hover:shadow-card bg-card"
@@ -37,7 +42,8 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            setIsFavorite(!isFavorite);
+            const next = toggleFavorite(product.id);
+            setIsFavorite(next);
           }}
           className="absolute top-3 right-3 w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm flex items-center justify-center hover:bg-card transition-smooth shadow-soft"
         >

@@ -37,7 +37,7 @@ export function AdminSidebar() {
               `flex items-center gap-3 px-4 py-3 rounded-lg transition-smooth ${
                 isActive
                   ? 'bg-primary text-primary-foreground shadow-soft'
-                  : 'hover:bg-muted'
+                  : 'hover:bg-muted hover:text-primary'
               }`
             }
           >
@@ -50,7 +50,7 @@ export function AdminSidebar() {
       <div className="p-4 border-t border-border/50">
         <Button
           variant="outline"
-          className="w-full justify-start gap-3"
+          className="w-full justify-start gap-3 transition-smooth hover:border-primary/50 hover:text-primary"
           onClick={handleLogout}
         >
           <LogOut className="w-5 h-5" />

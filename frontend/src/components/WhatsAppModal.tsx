@@ -33,9 +33,9 @@ export function WhatsAppModal({ open, onSubmit }: WhatsAppModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-md gradient-card border-primary/20">
+      <DialogContent className="sm:max-w-md gradient-card border-primary/20 hover:shadow-elevated transition-smooth">
         <DialogHeader className="space-y-4">
-          <div className="mx-auto w-16 h-16 rounded-full gradient-primary flex items-center justify-center shadow-soft">
+          <div className="mx-auto w-16 h-16 rounded-full gradient-primary flex items-center justify-center shadow-soft hover:shadow-elevated hover:scale-105 transition-smooth">
             <Phone className="w-8 h-8 text-primary-foreground" />
           </div>
           <DialogTitle className="text-2xl font-display text-center">
@@ -53,7 +53,7 @@ export function WhatsAppModal({ open, onSubmit }: WhatsAppModalProps) {
               placeholder="(00) 00000-0000"
               value={phone}
               onChange={(e:any) => setPhone(formatPhone(e.target.value))}
-              className="h-12 text-center text-lg border-primary/30 focus:border-primary transition-smooth"
+              className="h-12 text-center text-lg border-primary/30 focus:border-primary hover:border-primary/40 transition-smooth"
               maxLength={15}
               required
             />
@@ -61,7 +61,7 @@ export function WhatsAppModal({ open, onSubmit }: WhatsAppModalProps) {
 
           <Button
             type="submit"
-            className="w-full h-12 gradient-primary text-base font-medium shadow-soft hover:shadow-elevated transition-smooth"
+            className="w-full h-12 gradient-primary text-base font-medium shadow-soft hover:shadow-elevated hover:brightness-110 hover:-translate-y-0.5 transition-smooth"
             disabled={phone.length < 14}
           >
             Continuar para o Catálogo

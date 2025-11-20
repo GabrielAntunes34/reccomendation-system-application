@@ -22,7 +22,7 @@ export function RecommendedProducts({ products, onProductClick }: RecommendedPro
           <button
             key={product.id}
             onClick={() => onProductClick(product)}
-            className="group relative bg-card border border-border/50 rounded-xl overflow-hidden hover:border-primary/50 hover:shadow-soft transition-smooth text-left"
+            className="group relative bg-card border border-border/50 rounded-xl overflow-hidden hover:border-primary/50 hover:shadow-soft hover:-translate-y-1 hover:brightness-105 transition-smooth text-left cursor-pointer"
           >
             <div className="aspect-square overflow-hidden bg-muted">
               <img
