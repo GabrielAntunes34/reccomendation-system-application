@@ -15,9 +15,21 @@ interface ProductDetailModalProps {
   onClose: () => void;
   onProductChange?: (product: Product) => void;
   allProducts?: Product[];
+  onFavoriteChange?: (productId: string, liked: boolean) => void;
+  onContact?: (productId: string) => void;
+  onProductView?: (productId: string) => void;
 }
 
-export function ProductDetailModal({ product, open, onClose, onProductChange, allProducts = [] }: ProductDetailModalProps) {
+export function ProductDetailModal({
+  product,
+  open,
+  onClose,
+  onProductChange,
+  allProducts = [],
+  onFavoriteChange,
+  onContact,
+  onProductView,
+}: ProductDetailModalProps) {
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [isFavorite, setIsFavorite] = useState(false);
@@ -42,6 +54,9 @@ export function ProductDetailModal({ product, open, onClose, onProductChange, al
     if (onProductChange) {
       onProductChange(recommendedProduct);
     }
+    if (onProductView) {
+      onProductView(recommendedProduct.id);
+    }
   };
 
   const handleWhatsApp = () => {
@@ -51,11 +66,13 @@ export function ProductDetailModal({ product, open, onClose, onProductChange, al
     )}). Tamanho: ${selectedSize || "não selecionado"}.`;
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank", "noopener,noreferrer");
+    if (onContact) onContact(product.id);
   };
 
   const handleToggleFavorite = () => {
     const next = toggleFavorite(product.id);
     setIsFavorite(next);
+    if (onFavoriteChange) onFavoriteChange(product.id, next);
   };
 
   return (

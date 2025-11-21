@@ -56,3 +56,11 @@ export const collectionApi = {
   list: () => api.get("/collections"),
   remove: (id: string) => api.delete(`/collections/${id}`),
 };
+
+export const interactionApi = {
+  create: (data: unknown) => api.post("/interactions", data),
+  get: (userId: string | number, productId: string | number) =>
+    api.get(`/interactions/${userId}/${productId}`),
+  update: (userId: string | number, productId: string | number, data: unknown) =>
+    api.patch(`/interactions/${userId}/${productId}`, data),
+};

@@ -4,8 +4,9 @@ import { ProductCard } from "@/components/ProductCard";
 import type { Product } from "@/components/ProductCard";
 import { ProductDetailModal } from "@/components/ProductDetailModal";
 import { products as fallbackProducts } from "@/data/products";
-import { productApi, collectionApi } from "@/lib/api";
+import { productApi, collectionApi, userApi, interactionApi } from "@/lib/api";
 import { Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import {
   Carousel,
   CarouselContent,
@@ -38,15 +39,28 @@ const Index = () => {
     return !localStorage.getItem("whatsapp_phone");
   });
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [userId, setUserId] = useState<number | null>(() => {
+    const stored = localStorage.getItem("user_id");
+    return stored ? Number(stored) : null;
+  });
   const [catalog, setCatalog] = useState<Product[]>([]);
   const [collections, setCollections] = useState<ApiCollection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const handlePhoneSubmit = (phone: string) => {
+  const handlePhoneSubmit = async (phone: string) => {
     localStorage.setItem("whatsapp_phone", phone);
     setShowWhatsAppModal(false);
-    console.log("WhatsApp saved:", phone);
+    try {
+      const created = await userApi.create({ name: "Cliente", phone_nmr: phone }) as { id?: number };
+      if (created && created.id) {
+        setUserId(created.id);
+        localStorage.setItem("user_id", String(created.id));
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao registrar usuário";
+      toast.error(message);
+    }
   };
 
   useEffect(() => {
@@ -116,6 +130,89 @@ const Index = () => {
 
     return [{ title: "Produtos", products: catalog }];
   }, [collections, catalog]);
+
+  const getInteraction = async (productId: string) => {
+    if (!userId) return null;
+    try {
+      const current = await interactionApi.get(userId, productId);
+      return current as { times_viewed?: number; liked?: boolean; contacted?: boolean };
+    } catch {
+      return null;
+    }
+  };
+
+  const recordView = async (productId: string) => {
+    if (!userId) return;
+    try {
+      const current = await getInteraction(productId);
+      const times = (current?.times_viewed ?? 0) + 1;
+      if (current) {
+        await interactionApi.update(userId, productId, {
+          times_viewed: times,
+          liked: current?.liked ?? false,
+          contacted: current?.contacted ?? false,
+        });
+      } else {
+        await interactionApi.create({
+          user_id: userId,
+          product_id: Number(productId),
+          times_viewed: times,
+          liked: false,
+          contacted: false,
+        });
+      }
+    } catch (err) {
+      console.error("Erro ao registrar visualização", err);
+    }
+  };
+
+  const recordFavorite = async (productId: string, liked: boolean) => {
+    if (!userId) return;
+    try {
+      const current = await getInteraction(productId);
+      if (current) {
+        await interactionApi.update(userId, productId, {
+          times_viewed: current?.times_viewed ?? 1,
+          liked,
+          contacted: current?.contacted ?? false,
+        });
+      } else {
+        await interactionApi.create({
+          user_id: userId,
+          product_id: Number(productId),
+          times_viewed: 1,
+          liked,
+          contacted: false,
+        });
+      }
+    } catch (err) {
+      console.error("Erro ao registrar like", err);
+    }
+  };
+
+  const recordContact = async (productId: string) => {
+    if (!userId) return;
+    try {
+      const current = await getInteraction(productId);
+      if (current) {
+        await interactionApi.update(userId, productId, {
+          times_viewed: current?.times_viewed ?? 1,
+          liked: current?.liked ?? false,
+          contacted: true,
+        });
+      } else {
+        await interactionApi.create({
+          user_id: userId,
+          product_id: Number(productId),
+          times_viewed: 1,
+          liked: false,
+          contacted: true,
+        });
+      }
+    } catch (err) {
+      console.error("Erro ao registrar contato", err);
+    }
+  };
 
   return (
     <>
@@ -219,7 +316,10 @@ const Index = () => {
                       >
                         <ProductCard
                           product={product}
-                          onClick={() => setSelectedProduct(product)}
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            recordView(product.id);
+                          }}
                         />
                       </CarouselItem>
                     ))}
@@ -245,6 +345,9 @@ const Index = () => {
         onClose={() => setSelectedProduct(null)}
         onProductChange={setSelectedProduct}
         allProducts={catalog}
+        onFavoriteChange={recordFavorite}
+        onContact={recordContact}
+        onProductView={recordView}
       />
     </>
   );

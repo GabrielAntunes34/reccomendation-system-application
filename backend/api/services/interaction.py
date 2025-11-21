@@ -28,8 +28,8 @@ async def get_interaction_by_id(db: AsyncSession, user_id: int, product_id: int)
     # Obtendo o registro único da interação daquele usuário com aquele produto
     result = await db.execute(
         select(InteractionModel).where(
-            InteractionModel.user_id == user_id
-            and InteractionModel.product_id == product_id
+            (InteractionModel.user_id == user_id)
+            & (InteractionModel.product_id == product_id)
         )
     )
     return result.scalar_one_or_none()
