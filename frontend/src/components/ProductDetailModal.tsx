@@ -22,15 +22,16 @@ export function ProductDetailModal({ product, open, onClose, onProductChange }: 
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [isFavorite, setIsFavorite] = useState(false);
 
-  if (!product) return null;
-
-  const recommendedProducts = getRecommendedProducts(product, products);
-
   useEffect(() => {
+    if (!product) return;
     setSelectedColor("");
     setSelectedSize("");
     setIsFavorite(isFavoriteStored(product.id));
-  }, [product.id]);
+  }, [product?.id, product]);
+
+  if (!product) return null;
+
+  const recommendedProducts = getRecommendedProducts(product, products);
 
   const handleRecommendedClick = (recommendedProduct: Product) => {
     setSelectedColor("");
