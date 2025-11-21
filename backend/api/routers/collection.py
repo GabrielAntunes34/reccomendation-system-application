@@ -1,10 +1,12 @@
 from core.bdConnection import get_db
 from fastapi import APIRouter, Depends, HTTPException
 from schemas.collection import Collection, CollectionCreate
+from schemas.product import Product
 from services.collection import (
     create_collection,
     delete_collection,
     get_collection_by_id,
+    get_collection_products,
     list_all_collections,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,6 +34,15 @@ async def read(collection_id: int, db: AsyncSession = Depends(get_db)):
     if not collection:
         raise HTTPException(404, "prodcuct not found")
     return collection
+
+
+@router.get("/{collection_id}/products", response_model=list[Product])
+async def read_products(collection_id: int, db: AsyncSession = Depends(get_db)):
+    products = await get_collection_products(db, collection_id)
+
+    if not products:
+        raise HTTPException(404, "product not found")
+    return products
 
 
 @router.delete("/{collection_id}")

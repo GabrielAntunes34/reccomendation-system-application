@@ -1,4 +1,5 @@
 from models.collection import Collection as CollectionModel
+from models.product import Product as ProductModel
 from schemas.collection import CollectionCreate
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,6 +28,24 @@ async def get_collection_by_id(db: AsyncSession, id: int):
 
     result = await db.execute(select(CollectionModel).where(CollectionModel.id == id))
     return result.scalar_one_or_none()
+
+
+async def get_collection_products(db: AsyncSession, id: int):
+    """Cotroller da rota que retorna todos os produtos da coleção específicada"""
+
+    # Verificando a existência da coleção
+    collection = await get_collection_by_id(db, id)
+    if not collection:
+        print("aaaaaaaaaaa")
+        return None
+
+    # buscar produtos explicitamente
+    collection_products = await db.execute(
+        select(ProductModel).where(ProductModel.collection_id == id)
+    )
+
+    # Retornando apenas os produtos daquela coleção
+    return collection_products.scalars().all()
 
 
 async def delete_collection(db: AsyncSession, id: int):
