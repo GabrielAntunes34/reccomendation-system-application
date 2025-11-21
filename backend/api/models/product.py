@@ -1,5 +1,5 @@
 from core.bdConnection import Base
-from sqlalchemy import Column, Float, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
 
@@ -16,6 +16,7 @@ class Product(Base):
     description = Column(String, nullable=False)
     image = Column(String, nullable=False)
     model = Column(String, nullable=False)
+    disponible = Column(Boolean, nullable=False, default=True)
 
     # For the 1-to-many realtionship with Collection
     collection_id = Column(Integer, ForeignKey("collections.id"), nullable=False)

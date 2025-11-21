@@ -1,5 +1,5 @@
 from models.interaction import Interaction as InteractionModel
-from schemas.interaction import InteractionCreate
+from schemas.interaction import InteractionCreate, InteractionUpdate
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -53,6 +53,27 @@ async def get_all_product_interactions(db: AsyncSession, product_id: int):
     )
 
     return results.scalars().all()
+
+
+async def update_interaction(
+    db: AsyncSession, user_id: int, product_id: int, data: InteractionUpdate
+):
+    """Atualiza um registro de interação com as novas ações do usuário coletadas no frontend"""
+
+    # Buscando a interação no BD
+    interaction = await get_interaction_by_id(db, user_id, product_id)
+    if not interaction:
+        return None
+
+    # Atualizando em interaction apenas com os campos enviados em data
+    updated_data = data.model_dump(exclude_none=True)
+    for key, value in updated_data.items():
+        setattr(interaction, key, value)
+
+    # Refletindo essas mudanças no BD
+    await db.commit()
+    await db.refresh(interaction)
+    return interaction
 
 
 async def delete_interaction(db: AsyncSession, user_id: int, product_id: int):
