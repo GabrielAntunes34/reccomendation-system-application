@@ -4,7 +4,8 @@ from core.bdConnection import Base, engine
 from fastapi import FastAPI
 
 # Importando as models
-from models import collection, product
+from models import collection, product, user
+from routers.collection import router as collection_router
 
 # Importando os routers
 from routers.product import router as product_router
@@ -31,7 +32,7 @@ app = FastAPI(
     title="Arte em Laço's recommender Web API", version="1.0.0", lifespan=lifespan
 )
 
-
 # Rotas da API
-app.include_router(product_router, prefix="/product", tags=["Products"])
 app.include_router(user_router, prefix="/user", tags=["User"])
+app.include_router(product_router, prefix="/product", tags=["Product"])
+app.include_router(collection_router, prefix="/collection", tags=["Collection"])
