@@ -1,6 +1,5 @@
 from core.bdConnection import Base
-from sqlalchemy import Column, Float, ForeignKey, Integer, String
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import Column, Integer, String
 
 
 class Collection(Base):
@@ -8,4 +7,3 @@ class Collection(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    quantity = Column(Integer, nullable=False)
