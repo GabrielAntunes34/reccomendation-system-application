@@ -10,9 +10,17 @@ class InteractionBase(BaseModel):
 
 
 class InteractionCreate(InteractionBase):
-    """Classe para a utilização das interactions em requisições POST"""
+    """Classe para a criação das interactions em requisições POST"""
 
     pass
+
+
+class InteractionUpdate(BaseModel):
+    """Classe para a atualização das interactions em requisições PATCH"""
+
+    times_viewed: int | None = None
+    liked: bool | None = None
+    contacted: bool | None = None
 
 
 class Interaction(InteractionBase):
