@@ -1,6 +1,7 @@
 from core.bdConnection import Base
 from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.orm import relationship
 
 
 class Product(Base):
@@ -15,4 +16,11 @@ class Product(Base):
     description = Column(String, nullable=False)
     image = Column(String, nullable=False)
     model = Column(String, nullable=False)
+
+    # For the 1-to-many realtionship with Collection
     collection_id = Column(Integer, ForeignKey("collections.id"), nullable=False)
+
+    # For the many-to-many relationship with interaction
+    interactions = relationship(
+        "Interaction", back_populates="product", cascade="all, delete"
+    )
