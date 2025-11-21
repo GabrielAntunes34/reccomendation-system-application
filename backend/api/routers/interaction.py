@@ -27,16 +27,7 @@ async def read_all(db: AsyncSession = Depends(get_db)):
     return interactions
 
 
-@router.get("/{user_id}/{product_id}", response_model=Interaction)
-async def read(user_id: int, product_id: int, db: AsyncSession = Depends(get_db)):
-    interaction = await get_interaction_by_id(db, user_id, product_id)
-
-    if not interaction:
-        raise HTTPException(404, "interaction not found")
-    return interaction
-
-
-@router.get("user/{user_id}", response_model=Interaction)
+@router.get("/users/{user_id}", response_model=list[Interaction])
 async def read_from_user(user_id: int, db: AsyncSession = Depends(get_db)):
     interactions = await get_all_user_interactions(db, user_id)
 
@@ -45,13 +36,22 @@ async def read_from_user(user_id: int, db: AsyncSession = Depends(get_db)):
     return interactions
 
 
-@router.get("product/{product_id}", response_model=Interaction)
+@router.get("/products/{product_id}", response_model=list[Interaction])
 async def read_from_product(product_id: int, db: AsyncSession = Depends(get_db)):
     interactions = await get_all_product_interactions(db, product_id)
 
     if not interactions:
         raise HTTPException(404, f"interactions for product {product_id} not found")
     return interactions
+
+
+@router.get("/{user_id}/{product_id}", response_model=Interaction)
+async def read(user_id: int, product_id: int, db: AsyncSession = Depends(get_db)):
+    interaction = await get_interaction_by_id(db, user_id, product_id)
+
+    if not interaction:
+        raise HTTPException(404, "interaction not found")
+    return interaction
 
 
 @router.delete("/{user_id}/{product_id}")

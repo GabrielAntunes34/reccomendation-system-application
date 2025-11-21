@@ -5,8 +5,8 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     PrimaryKeyConstraint,
-    String,
 )
+from sqlalchemy.orm import relationship
 
 
 class Interaction(Base):
@@ -24,6 +24,14 @@ class Interaction(Base):
     __table_args__ = (PrimaryKeyConstraint("user_id", "product_id"),)
 
     # Types of interaction
-    times_viewd = Column(Integer, nullable=False)
-    liked = Column(String, nullable=False)  # User clicked at the heart button
-    contacted = Column(Boolean, nullable=False)  # User tried to bought it!
+    times_viewed = Column(Integer, nullable=False, default=0)
+    liked = Column(
+        Boolean, nullable=False, default=False
+    )  # Usuário clicou no botão do coração
+    contacted = Column(
+        Boolean, nullable=False, default=False
+    )  # Usuário tentou comprar o produto!
+
+    # Definindo a relação
+    product = relationship("Product", back_populates="interactions")
+    user = relationship("User", back_populates="interactions")

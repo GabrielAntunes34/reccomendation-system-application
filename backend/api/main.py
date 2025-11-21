@@ -34,7 +34,7 @@ app = FastAPI(
 )
 
 # Rotas da API
-app.include_router(user_router, prefix="/user", tags=["User"])
-app.include_router(product_router, prefix="/product", tags=["Product"])
-app.include_router(collection_router, prefix="/collection", tags=["Collection"])
-app.include_router(interaction_router, prefix="/interaction", tags=["Interaction"])
+app.include_router(user_router, prefix="/users", tags=["User"])
+app.include_router(product_router, prefix="/products", tags=["Product"])
+app.include_router(collection_router, prefix="/collections", tags=["Collection"])
+app.include_router(interaction_router, prefix="/interactions", tags=["Interaction"])

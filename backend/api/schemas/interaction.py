@@ -4,7 +4,7 @@ from pydantic import BaseModel
 class InteractionBase(BaseModel):
     user_id: int
     product_id: int
-    times_viewd: int
+    times_viewed: int
     liked: bool
     contacted: bool
 

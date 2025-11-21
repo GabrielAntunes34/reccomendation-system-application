@@ -1,6 +1,5 @@
 from core.bdConnection import Base
-from sqlalchemy import Column, Float, ForeignKey, Integer, String
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 
 
