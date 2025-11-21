@@ -1,4 +1,11 @@
-#!/bin/sh
+#!/bin/bash
+
+# Carrega variáveis de ambiente do .env local (se existir)
+if [ -f .env ]; then
+  set -a
+  . ./.env
+  set +a
+fi
 
 # Executando o docker
 echo "-- DOCKER --"
