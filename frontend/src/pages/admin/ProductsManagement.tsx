@@ -1,11 +1,10 @@
-import { useState } from 'react';
-import { products as initialProducts } from '@/data/products';
-import type { Product } from '@/data/products';
+import { useEffect, useMemo, useState } from 'react';
+import { productApi, collectionApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { ProductFormDialog } from '@/components/admin/ProductFormDialog';
+import { ProductFormDialog, type AdminProductFormData } from '@/components/admin/ProductFormDialog';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -18,40 +17,161 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+type ApiProduct = {
+  id: number;
+  name: string;
+  price: number;
+  image: string;
+  category: string;
+  color: string[];
+  size: string;
+  description: string;
+  model: string;
+  collection_id: number;
+};
+
+type Collection = { id: number; name: string };
+
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  category: string;
+  colors: string[];
+  sizes: string[];
+  description: string;
+  collection?: string;
+  collectionId?: number;
+  model?: string;
+};
+
 export default function ProductsManagement() {
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [apiCollections, apiProducts] = await Promise.all([
+          collectionApi.list().catch(() => []),
+          productApi.list().catch(() => []),
+        ]);
+        const cols = apiCollections as Collection[];
+        setCollections(cols);
+        const mapped = (apiProducts as ApiProduct[]).map((p) => {
+          const colName = cols.find((c) => c.id === p.collection_id)?.name;
+          return {
+            id: String(p.id),
+            name: p.name,
+            price: p.price,
+            image: p.image,
+            category: p.category,
+            colors: Array.isArray(p.color) ? p.color : [],
+            sizes: p.size ? p.size.split(',').map((s) => s.trim()).filter(Boolean) : ['Único'],
+            description: p.description,
+            collection: colName,
+            collectionId: p.collection_id,
+            model: p.model,
+          } as Product;
+        });
+        setProducts(mapped);
+        setError(null);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Erro ao carregar produtos';
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+    // somente na montagem
+  }, []);
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddProduct = (product: Omit<Product, 'id'>) => {
-    const maxId = products.length > 0 ? Math.max(...products.map(p => parseInt(p.id))) : 0;
-    const newProduct: Product = {
-      ...product,
-      id: (maxId + 1).toString(),
-    };
-    setProducts([...products, newProduct]);
-    toast.success('Produto adicionado com sucesso!');
-    setIsFormOpen(false);
+  const toBackendPayload = (product: AdminProductFormData) => ({
+    name: product.name,
+    price: product.price,
+    color: product.colors,
+    category: product.category,
+    size: product.sizes.join(','),
+    description: product.description,
+    image: product.image,
+    model: product.model || 'manual',
+    collection_id: product.collectionId,
+  });
+
+  const handleAddProduct = async (product: AdminProductFormData) => {
+    if (!product.collectionId) {
+      toast.error('Selecione uma coleção');
+      return;
+    }
+    try {
+      const created = await productApi.create(toBackendPayload(product)) as ApiProduct;
+      const mapped = mapApiProduct(created);
+      setProducts((prev) => [...prev, mapped]);
+      toast.success('Produto adicionado com sucesso!');
+      setIsFormOpen(false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao adicionar produto';
+      toast.error(message);
+    }
   };
 
-  const handleEditProduct = (updatedProduct: Product) => {
-    setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
-    toast.success('Produto atualizado com sucesso!');
-    setEditingProduct(null);
+  const handleEditProduct = async (updatedProduct: AdminProductFormData) => {
+    if (!updatedProduct.id || !updatedProduct.collectionId) {
+      toast.error('Dados inválidos para edição.');
+      return;
+    }
+    try {
+      const saved = await productApi.update(updatedProduct.id, toBackendPayload(updatedProduct)) as ApiProduct;
+      const mapped: Product = {
+        id: String(saved.id),
+        name: saved.name,
+        price: saved.price,
+        image: saved.image,
+        category: saved.category,
+        colors: Array.isArray(saved.color) ? saved.color : [],
+        sizes: saved.size ? saved.size.split(',').map((s) => s.trim()).filter(Boolean) : ['Único'],
+        description: saved.description,
+        collection: collections.find((c) => c.id === saved.collection_id)?.name,
+        collectionId: saved.collection_id,
+        model: saved.model,
+      };
+      setProducts((prev) => prev.map((p) => (p.id === mapped.id ? mapped : p)));
+      toast.success('Produto atualizado com sucesso!');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao editar produto';
+      toast.error(message);
+    } finally {
+      setEditingProduct(null);
+      setIsFormOpen(false);
+    }
   };
 
-  const handleDeleteProduct = () => {
+  const handleDeleteProduct = async () => {
     if (deletingProduct) {
-      setProducts(products.filter(p => p.id !== deletingProduct.id));
-      toast.success('Produto removido com sucesso!');
-      setDeletingProduct(null);
+      try {
+        await productApi.remove(deletingProduct.id);
+        setProducts(products.filter(p => p.id !== deletingProduct.id));
+        toast.success('Produto removido com sucesso!');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Erro ao remover produto';
+        toast.error(message);
+      } finally {
+        setDeletingProduct(null);
+      }
     }
   };
 
@@ -95,6 +215,16 @@ export default function ProductsManagement() {
 
       {/* Products Table */}
       <div className="bg-card rounded-xl border border-border/50 shadow-soft overflow-hidden">
+        {error && (
+          <div className="p-4 text-sm text-red-700 bg-red-50 border-b border-red-200">
+            {error}
+          </div>
+        )}
+        {loading && (
+          <div className="p-4 text-sm text-muted-foreground border-b border-border/50">
+            Carregando produtos...
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted/50 border-b border-border/50">
@@ -173,6 +303,7 @@ export default function ProductsManagement() {
         onOpenChange={setIsFormOpen}
         product={editingProduct}
         onSubmit={editingProduct ? handleEditProduct : handleAddProduct}
+        collections={collections}
       />
 
       {/* Delete Confirmation Dialog */}

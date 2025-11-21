@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { WhatsAppModal } from "@/components/WhatsAppModal";
 import { ProductCard } from "@/components/ProductCard";
 import type { Product } from "@/components/ProductCard";
 import { ProductDetailModal } from "@/components/ProductDetailModal";
-import { products } from "@/data/products";
+import { products as fallbackProducts } from "@/data/products";
+import { productApi, collectionApi } from "@/lib/api";
 import { Sparkles } from "lucide-react";
 import {
   Carousel,
@@ -13,12 +14,34 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
+type ApiProduct = {
+  id: number;
+  name: string;
+  price: number;
+  image: string;
+  category: string;
+  color: string[];
+  size: string;
+  description: string;
+  model: string;
+  collection_id?: number | null;
+};
+
+type ApiCollection = {
+  id: number;
+  name: string;
+};
+
 const Index = () => {
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(() => {
     if (typeof window === "undefined") return false;
     return !localStorage.getItem("whatsapp_phone");
   });
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [catalog, setCatalog] = useState<Product[]>([]);
+  const [collections, setCollections] = useState<ApiCollection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const handlePhoneSubmit = (phone: string) => {
     localStorage.setItem("whatsapp_phone", phone);
@@ -26,11 +49,73 @@ const Index = () => {
     console.log("WhatsApp saved:", phone);
   };
 
-  const collections = [
-    { title: "Novidades", products: products.filter(p => p.collection === "Novidades") },
-    { title: "Mais Vendidos", products: products.filter(p => p.collection === "Mais Vendidos") },
-    { title: "Ofertas", products: products.filter(p => p.collection === "Ofertas") },
-  ];
+  useEffect(() => {
+    const mapApiProduct = (p: ApiProduct, collectionLookup: Map<number, string>): Product => ({
+      id: String(p.id),
+      name: p.name,
+      price: p.price,
+      image: p.image,
+      category: p.category,
+      colors: Array.isArray(p.color) ? p.color : [],
+      sizes: p.size
+        ? p.size.split(",").map((s) => s.trim()).filter(Boolean)
+        : ["Único"],
+      description: p.description,
+      collection: p.collection_id ? collectionLookup.get(p.collection_id) ?? undefined : undefined,
+    });
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [apiProducts, apiCollections] = await Promise.all([
+          productApi.list().catch(() => []),
+          collectionApi.list().catch(() => []),
+        ]);
+
+        const collectionLookup = new Map<number, string>(
+          (apiCollections as ApiCollection[]).map((c) => [c.id, c.name]),
+        );
+
+        const mappedProducts =
+          (apiProducts as ApiProduct[]).map((p) => mapApiProduct(p, collectionLookup)) || [];
+
+        setCatalog(mappedProducts);
+        setCollections(apiCollections as ApiCollection[]);
+        setError(mappedProducts.length ? null : "Nenhum produto cadastrado no backend.");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Erro ao carregar produtos";
+        setCatalog([]);
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const collectionsToShow = useMemo(() => {
+    if (!catalog.length) return [];
+
+    if (collections.length) {
+      const sections = collections
+        .map((col) => ({
+          title: col.name,
+          products: catalog.filter((p) => p.collection === col.name),
+        }))
+        .filter((section) => section.products.length);
+
+      const noCollection = catalog.filter(
+        (p) => !p.collection || !collections.find((c) => c.name === p.collection),
+      );
+      if (noCollection.length) {
+        sections.push({ title: "Outros", products: noCollection });
+      }
+      return sections;
+    }
+
+    return [{ title: "Produtos", products: catalog }];
+  }, [collections, catalog]);
 
   return (
     <>
@@ -69,6 +154,12 @@ const Index = () => {
 
         {/* Main Content */}
         <main className="container mx-auto px-4 py-8 space-y-8">
+          {error && (
+            <div className="p-4 rounded-md border border-red-200 bg-red-50 text-red-700 text-sm">
+              {error}
+            </div>
+          )}
+
           {/* Hero Section */}
           <section className="text-center space-y-4 py-8 animate-fade-in">
             <h2 className="text-4xl md:text-5xl font-display font-bold leading-tight space-y-1">
@@ -89,37 +180,55 @@ const Index = () => {
           </section>
 
           {/* Collections Sections */}
-          {collections.map((collection, index) => (
-            <section key={collection.title} className="space-y-4 animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-              <div className="flex items-center gap-3">
-                <Sparkles className="w-6 h-6 text-primary" />
-                <h3 className="text-2xl md:text-3xl font-display font-bold">
-                  {collection.title}
-                </h3>
-              </div>
+          {loading && (
+            <div className="text-center text-muted-foreground">Carregando catálogo...</div>
+          )}
 
-              <Carousel
-                opts={{
-                  align: "start",
-                  loop: true,
-                }}
-                className="w-full"
+          {!loading && !collectionsToShow.length && (
+            <div className="p-6 rounded-md border border-border/60 bg-card/60 text-center text-muted-foreground">
+              Nenhum produto disponível no momento.
+            </div>
+          )}
+
+          {!loading &&
+            collectionsToShow.map((collection, index) => (
+              <section
+                key={collection.title}
+                className="space-y-4 animate-fade-in"
+                style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <CarouselContent className="-ml-4">
-                  {collection.products.map((product) => (
-                    <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                      <ProductCard
-                        product={product}
-                        onClick={() => setSelectedProduct(product)}
-                      />
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious className="hidden md:flex" />
-                <CarouselNext className="hidden md:flex" />
-              </Carousel>
-            </section>
-          ))}
+                <div className="flex items-center gap-3">
+                  <Sparkles className="w-6 h-6 text-primary" />
+                  <h3 className="text-2xl md:text-3xl font-display font-bold">
+                    {collection.title}
+                  </h3>
+                </div>
+
+                <Carousel
+                  opts={{
+                    align: "start",
+                    loop: true,
+                  }}
+                  className="w-full"
+                >
+                  <CarouselContent className="-ml-4">
+                    {collection.products.map((product) => (
+                      <CarouselItem
+                        key={product.id}
+                        className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
+                      >
+                        <ProductCard
+                          product={product}
+                          onClick={() => setSelectedProduct(product)}
+                        />
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="hidden md:flex" />
+                  <CarouselNext className="hidden md:flex" />
+                </Carousel>
+              </section>
+            ))}
         </main>
 
         {/* Footer */}
@@ -135,6 +244,7 @@ const Index = () => {
         open={!!selectedProduct}
         onClose={() => setSelectedProduct(null)}
         onProductChange={setSelectedProduct}
+        allProducts={catalog}
       />
     </>
   );

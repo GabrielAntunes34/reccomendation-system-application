@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 # Classe base para definir o tipo User em memória
 class CollectionBase(BaseModel):
     name: str
-    quantity: int  # Número de itens em uma coleção
+    quantity: int | None = 0  # Número de itens em uma coleção (default 0)
 
 
 class CollectionCreate(CollectionBase):

@@ -4,10 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageCircle, Heart } from "lucide-react";
 import type { Product } from "./ProductCard";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { RecommendedProducts } from "./RecommendedProducts";
 import { getRecommendedProducts } from "@/utils/recommendations";
-import { products } from "@/data/products";
 import { isFavorite as isFavoriteStored, toggleFavorite } from "@/utils/favorites";
 
 interface ProductDetailModalProps {
@@ -15,12 +14,18 @@ interface ProductDetailModalProps {
   open: boolean;
   onClose: () => void;
   onProductChange?: (product: Product) => void;
+  allProducts?: Product[];
 }
 
-export function ProductDetailModal({ product, open, onClose, onProductChange }: ProductDetailModalProps) {
+export function ProductDetailModal({ product, open, onClose, onProductChange, allProducts = [] }: ProductDetailModalProps) {
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [isFavorite, setIsFavorite] = useState(false);
+
+  const recommendedProducts = useMemo(
+    () => (product ? getRecommendedProducts(product, allProducts) : []),
+    [product, allProducts],
+  );
 
   useEffect(() => {
     if (!product) return;
@@ -30,8 +35,6 @@ export function ProductDetailModal({ product, open, onClose, onProductChange }: 
   }, [product?.id, product]);
 
   if (!product) return null;
-
-  const recommendedProducts = getRecommendedProducts(product, products);
 
   const handleRecommendedClick = (recommendedProduct: Product) => {
     setSelectedColor("");

@@ -2,6 +2,8 @@ from contextlib import asynccontextmanager
 
 from core.bdConnection import Base, engine
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from decouple import config
 
 # Importando as models
 from models import collection, product, user
@@ -31,6 +33,16 @@ async def lifespan(app: FastAPI):
 # Instanciando a API
 app = FastAPI(
     title="Arte em Laço's recommender Web API", version="1.0.0", lifespan=lifespan
+)
+
+# Configuração de CORS para permitir o frontend (ajuste via env se precisar)
+frontend_origin = config("FRONTEND_ORIGIN", default="http://localhost:5173")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[frontend_origin],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Rotas da API

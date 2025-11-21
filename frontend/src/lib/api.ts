@@ -36,22 +36,23 @@ export const api = {
 
 // 
 export const productApi = {
-  create: (data: unknown) => api.post("/product", data),
-  get: (id: string) => api.get(`/product/${id}`),
-  list: () => api.get("/product/"),
-  remove: (id: string) => api.delete(`/product/${id}`),
+  create: (data: unknown) => api.post("/products", data),
+  get: (id: string) => api.get(`/products/${id}`),
+  list: () => api.get("/products"),
+  update: (id: string, data: unknown) => api.patch(`/products/${id}`, data),
+  remove: (id: string) => api.delete(`/products/${id}`),
 };
 
 export const userApi = {
-  create: (data: unknown) => api.post("/user", data),
-  get: (id: string) => api.get(`/user/${id}`),
-  list: () => api.get("/user/"),
-  remove: (id: string) => api.delete(`/user/${id}`),
+  create: (data: unknown) => api.post("/users", data),
+  get: (id: string) => api.get(`/users/${id}`),
+  list: () => api.get("/users"),
+  remove: (id: string) => api.delete(`/users/${id}`),
 };
 
 export const collectionApi = {
-  create: (data: unknown) => api.post("/collection", data),
-  get: (id: string) => api.get(`/collection/${id}`),
-  list: () => api.get("/collection/"),
-  remove: (id: string) => api.delete(`/collection/${id}`),
+  create: (data: unknown) => api.post("/collections", data),
+  get: (id: string) => api.get(`/collections/${id}`),
+  list: () => api.get("/collections"),
+  remove: (id: string) => api.delete(`/collections/${id}`),
 };

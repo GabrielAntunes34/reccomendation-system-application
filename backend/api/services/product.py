@@ -1,5 +1,5 @@
 from models.product import Product as ProductModel
-from schemas.product import ProductCreate
+from schemas.product import ProductCreate, ProductUpdate
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -39,4 +39,20 @@ async def delete_product(db: AsyncSession, id: int):
     await db.delete(product)
     await db.commit()
 
+    return product
+
+
+async def update_product(db: AsyncSession, id: int, data: ProductUpdate):
+    """Atualiza campos de um produto"""
+    product = await get_product_by_id(db, id)
+    if not product:
+        return None
+
+    updates = data.model_dump(exclude_unset=True)
+    for key, value in updates.items():
+        setattr(product, key, value)
+
+    db.add(product)
+    await db.commit()
+    await db.refresh(product)
     return product

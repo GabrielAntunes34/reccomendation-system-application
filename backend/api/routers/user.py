@@ -13,13 +13,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 router = APIRouter()
 
 
-@router.post("/", response_model=User)
+@router.post("", response_model=User)
 async def create(user: UserCreate, db: AsyncSession = Depends(get_db)):
     product = await create_user(db, user)
     return product
 
 
-@router.get("/", response_model=list[User])
+@router.get("", response_model=list[User])
 async def read_all(db: AsyncSession = Depends(get_db)):
     users = await list_all_users(db)
     return users

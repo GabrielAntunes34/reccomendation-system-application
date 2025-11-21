@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import type { Product } from '@/data/products';
 import {
   Dialog,
   DialogContent,
@@ -15,23 +14,41 @@ import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
 
+export type AdminProductFormData = {
+  id?: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  collectionId?: number;
+  collection?: string;
+  image: string;
+  colors: string[];
+  sizes: string[];
+  model?: string;
+};
+
+type CollectionOption = { id: number; name: string };
+
 interface ProductFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  product: Product | null;
-  onSubmit: (product: any) => void;
+  product: AdminProductFormData | null;
+  onSubmit: (product: AdminProductFormData) => void;
+  collections?: CollectionOption[];
 }
 
-export function ProductFormDialog({ open, onOpenChange, product, onSubmit }: ProductFormDialogProps) {
+export function ProductFormDialog({ open, onOpenChange, product, onSubmit, collections = [] }: ProductFormDialogProps) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: '',
     category: '',
-    collection: '',
+    collectionId: '',
     image: '',
     colors: [] as string[],
     sizes: [] as string[],
+    model: 'manual',
   });
   const [newColor, setNewColor] = useState('#000000');
   const [newSize, setNewSize] = useState('');
@@ -43,10 +60,11 @@ export function ProductFormDialog({ open, onOpenChange, product, onSubmit }: Pro
         description: product.description,
         price: product.price.toString(),
         category: product.category,
-        collection: product.collection || '',
+        collectionId: product.collectionId ? String(product.collectionId) : '',
         image: product.image,
         colors: product.colors,
         sizes: product.sizes,
+        model: product.model || 'manual',
       });
     } else {
       setFormData({
@@ -54,10 +72,11 @@ export function ProductFormDialog({ open, onOpenChange, product, onSubmit }: Pro
         description: '',
         price: '',
         category: '',
-        collection: '',
+        collectionId: '',
         image: '',
         colors: [],
         sizes: [],
+        model: 'manual',
       });
     }
   }, [product, open]);
@@ -70,16 +89,22 @@ export function ProductFormDialog({ open, onOpenChange, product, onSubmit }: Pro
       return;
     }
 
-    const productData = {
+    if (!formData.collectionId) {
+      toast.error('Selecione uma coleção');
+      return;
+    }
+
+    const productData: AdminProductFormData = {
       ...(product ? { id: product.id } : {}),
       name: formData.name,
       description: formData.description,
       price: parseFloat(formData.price),
       category: formData.category,
-      collection: formData.collection || undefined,
+      collectionId: Number(formData.collectionId),
       image: formData.image || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b',
       colors: formData.colors.length > 0 ? formData.colors : ['#000000'],
       sizes: formData.sizes.length > 0 ? formData.sizes : ['U'],
+      model: formData.model || 'manual',
     };
 
     onSubmit(productData);
@@ -199,14 +224,21 @@ export function ProductFormDialog({ open, onOpenChange, product, onSubmit }: Pro
             </div>
 
             <div className="col-span-2 space-y-2">
-              <Label htmlFor="collection">Coleção (opcional)</Label>
-              <Input
+              <Label htmlFor="collection">Coleção *</Label>
+              <select
                 id="collection"
-                value={formData.collection}
-                onChange={(e:any) => setFormData({ ...formData, collection: e.target.value })}
-                placeholder="Ex: Novidades"
-                className="hover:border-primary/40 transition-smooth"
-              />
+                value={formData.collectionId}
+                onChange={(e:any) => setFormData({ ...formData, collectionId: e.target.value })}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm hover:border-primary/40 transition-smooth"
+                required
+              >
+                <option value="">Selecione</option>
+                {collections.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="col-span-2 space-y-2">

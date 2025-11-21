@@ -1,4 +1,5 @@
 from typing import List
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -31,3 +32,17 @@ class Product(ProductBase):
     # Permitindo a leitura do ORM
     class Config:
         from_attributes = True
+
+
+class ProductUpdate(BaseModel):
+    """Campos opcionais para atualização parcial"""
+
+    name: Optional[str] = None
+    price: Optional[float] = None
+    color: Optional[List[str]] = None
+    category: Optional[str] = None
+    size: Optional[str] = None
+    description: Optional[str] = None
+    image: Optional[str] = None
+    model: Optional[str] = None
+    collection_id: Optional[int] = None

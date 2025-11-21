@@ -16,13 +16,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 router = APIRouter()
 
 
-@router.post("/", response_model=Interaction)
+@router.post("", response_model=Interaction)
 async def create(interaction: InteractionCreate, db: AsyncSession = Depends(get_db)):
     interaction = await create_interaction(db, interaction)
     return interaction
 
 
-@router.get("/", response_model=list[Interaction])
+@router.get("", response_model=list[Interaction])
 async def read_all(db: AsyncSession = Depends(get_db)):
     interactions = await list_all_interactions(db)
     return interactions
