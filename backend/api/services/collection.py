@@ -36,7 +36,6 @@ async def get_collection_products(db: AsyncSession, id: int):
     # Verificando a existência da coleção
     collection = await get_collection_by_id(db, id)
     if not collection:
-        print("aaaaaaaaaaa")
         return None
 
     # buscar produtos explicitamente
