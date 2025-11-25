@@ -1,29 +1,27 @@
 from core.bdConnection import Base
-from sqlalchemy import (
-    Boolean,
-    Column,
-    ForeignKey,
-    Integer,
-    PrimaryKeyConstraint,
-)
+from sqlalchemy import Boolean, Column, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 
 
 class Interaction(Base):
     __tablename__ = "interactions"
 
-    # Many-to-many relation
+    # Relação muitos para muitos
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
     )
     product_id = Column(
-        Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False
+        Integer,
+        ForeignKey("products.id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
     )
+    session_id = Column(Integer, primary_key=True, nullable=False)
 
-    # Definindo os dois ids como a chave primaria
-    __table_args__ = (PrimaryKeyConstraint("user_id", "product_id"),)
-
-    # Types of interaction
+    # Tipos de interação
     times_viewed = Column(Integer, nullable=False, default=0)
     liked = Column(
         Boolean, nullable=False, default=False

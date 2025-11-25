@@ -6,5 +6,5 @@ class Collection(Base):
     __tablename__ = "collections"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, unique=True)
     quantity = Column(Integer, nullable=False, default=0, server_default="0")
