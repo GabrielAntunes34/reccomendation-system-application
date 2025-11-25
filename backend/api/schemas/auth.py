@@ -6,7 +6,7 @@ class LoginRequest(BaseModel):
     phone_nmr: str
 
 
-# Mais discreta, visando garantir a autorização de rotas críticas
+# Mais discreta, visando garantir a autorização de rotas críticas (PARA O FUTURO?)
 class AdminRequest(BaseModel):
     password: str
 
