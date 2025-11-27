@@ -1,7 +1,25 @@
 from models.interaction import Interaction as InteractionModel
 from schemas.interaction import InteractionCreate, InteractionUpdate
-from sqlalchemy import select
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+
+async def get_user_last_session_id(db: AsyncSession, user_id):
+    """Auxiliar que retorna o id da última sessão de um usuário"""
+
+    # Obtendo o registro único da interação daquele usuário com aquele produto
+    result = await db.execute(
+        select(InteractionModel)
+        .where(InteractionModel.user_id == user_id)
+        .order_by(desc(InteractionModel.session_id))
+        .limit(1)
+    )
+    interaction = result.scalar_one_or_none()
+
+    # Retornando seu id, caso haja
+    if not interaction:
+        return 0
+    return interaction.session_id
 
 
 async def create_interaction(db: AsyncSession, data: InteractionCreate):
