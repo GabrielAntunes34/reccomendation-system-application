@@ -1,16 +1,17 @@
 from contextlib import asynccontextmanager
 
 from core.bdConnection import Base, engine
+from decouple import config
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from decouple import config
 
 # Importando as models
 from models import collection, product, user
+from routers.auth import router as auth_router
 from routers.collection import router as collection_router
-from routers.interaction import router as interaction_router
 
 # Importando os routers
+from routers.interaction import router as interaction_router
 from routers.product import router as product_router
 from routers.user import router as user_router
 
@@ -50,3 +51,4 @@ app.include_router(user_router, prefix="/users", tags=["User"])
 app.include_router(product_router, prefix="/products", tags=["Product"])
 app.include_router(collection_router, prefix="/collections", tags=["Collection"])
 app.include_router(interaction_router, prefix="/interactions", tags=["Interaction"])
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])

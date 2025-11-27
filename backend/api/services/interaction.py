@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def create_interaction(db: AsyncSession, data: InteractionCreate):
-    """Controller da rota que regitra um novo interação na base de dados"""
+    """Controller da rota que registra um novo interação na base de dados"""
 
     interaction = InteractionModel(**data.model_dump())
     db.add(interaction)
@@ -22,7 +22,9 @@ async def list_all_interactions(db: AsyncSession):
     return interaction_list.scalars().all()
 
 
-async def get_interaction_by_id(db: AsyncSession, user_id: int, product_id: int):
+async def get_interaction_by_id(
+    db: AsyncSession, user_id: int, product_id: int, session_id: int
+):
     """Controller da rota que retorna um interação especifico da base de dados"""
 
     # Obtendo o registro único da interação daquele usuário com aquele produto
@@ -30,6 +32,7 @@ async def get_interaction_by_id(db: AsyncSession, user_id: int, product_id: int)
         select(InteractionModel).where(
             (InteractionModel.user_id == user_id)
             & (InteractionModel.product_id == product_id)
+            & (InteractionModel.session_id == session_id)
         )
     )
     return result.scalar_one_or_none()
@@ -55,13 +58,47 @@ async def get_all_product_interactions(db: AsyncSession, product_id: int):
     return results.scalars().all()
 
 
+async def get_all_user_interactions_by_session(
+    db: AsyncSession, user_id: int, session_id: int
+):
+    """Obtem todos os produtos que um dado usuário obteve em uma certa sessão"""
+
+    results = await db.execute(
+        select(InteractionModel).where(
+            (InteractionModel.user_id == user_id)
+            & (InteractionModel.session_id == session_id)
+        )
+    )
+
+    return results.scalars().all()
+
+
+async def get_all_sessions_by_user_and_product(
+    db: AsyncSession, user_id: int, product_id: int
+):
+    """Obtem todas as sessões em que um certo usuário interagiu com um produto"""
+
+    results = await db.execute(
+        select(InteractionModel).where(
+            (InteractionModel.user_id == user_id)
+            & (InteractionModel.product_id == product_id)
+        )
+    )
+
+    return results.scalars().all()
+
+
 async def update_interaction(
-    db: AsyncSession, user_id: int, product_id: int, data: InteractionUpdate
+    db: AsyncSession,
+    user_id: int,
+    product_id: int,
+    session_id: int,
+    data: InteractionUpdate,
 ):
     """Atualiza um registro de interação com as novas ações do usuário coletadas no frontend"""
 
     # Buscando a interação no BD
-    interaction = await get_interaction_by_id(db, user_id, product_id)
+    interaction = await get_interaction_by_id(db, user_id, product_id, session_id)
     if not interaction:
         return None
 
@@ -76,9 +113,11 @@ async def update_interaction(
     return interaction
 
 
-async def delete_interaction(db: AsyncSession, user_id: int, product_id: int):
+async def delete_interaction(
+    db: AsyncSession, user_id: int, product_id: int, session_id: int
+):
     """Controller da rota que deleta um prodto da base de dados"""
-    interaction = await get_interaction_by_id(db, user_id, product_id)
+    interaction = await get_interaction_by_id(db, user_id, product_id, session_id)
 
     if not interaction:
         return None
