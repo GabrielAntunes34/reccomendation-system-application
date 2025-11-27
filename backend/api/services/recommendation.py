@@ -11,6 +11,11 @@ W_VIEW = 1 #peso para ver
 W_LIKE = 3  #peso para like
 W_CONTACT = 5 #peso para entrar em contato
 
+# Config SKNN
+MAX_SESSIONS_SCAN = 500
+TOP_K_NEIGHBORS = 50
+RECENCY_DECAY = 0.1  # quanto maior, maior o peso da recência (1/(1+gap*decay))
+
 #Calcula o score da interação
 def score_interaction(inter: InteractionModel) -> int:
     return (inter.times_viewed * W_VIEW) + (int(inter.liked) * W_LIKE) + (int(inter.contacted) * W_CONTACT)
@@ -45,8 +50,17 @@ def jaccard(a: Iterable[int], b: Iterable[int]) -> float:
         return 0.0
     return len(sa & sb) / len(sa | sb)
 
-async def get_similar_session(db: AsyncSession, target_prod_ids: set[int], limit_sessions: int = 100) -> list[tuple[int, float]]:
-    """Retorna [(session_id, score)] das sessões mais parecidas por coocorrencia de produtos."""
+async def get_similar_session(
+    db: AsyncSession,
+    target_prod_ids: set[int],
+    current_session_id: int,
+    limit_sessions: int = MAX_SESSIONS_SCAN,
+) -> list[tuple[int, float]]:
+    """Retorna [(session_id, score)] das sessões mais parecidas por coocorrencia de produtos.
+
+    Usa Jaccard como base e aplica decaimento por distância de session_id,
+    limitando os vizinhos mais similares (TOP_K_NEIGHBORS).
+    """
 
     res = await db.execute(
         select(InteractionModel.session_id, InteractionModel.product_id)
@@ -65,10 +79,14 @@ async def get_similar_session(db: AsyncSession, target_prod_ids: set[int], limit
         if not prods:
             continue
         sim = jaccard(target_prod_ids, prods)
-        if sim > 0:
-            scored.append((sess_id, sim))
+        if sim <= 0:
+            continue
+        gap = max(current_session_id - sess_id, 0)
+        recency = 1 / (1 + gap * RECENCY_DECAY)
+        scored.append((sess_id, sim * recency))
 
-    return sorted(scored, key=lambda x: x[1], reverse=True)
+    scored.sort(key=lambda x: x[1], reverse=True)
+    return scored[:TOP_K_NEIGHBORS]
 
 async def get_recommendations(
     db: AsyncSession,
@@ -91,7 +109,12 @@ async def get_recommendations(
         current_prod_ids.add(product_id)
 
     # 4) sessões similares por coocorrencia
-    similar_sessions = await get_similar_session(db, current_prod_ids, limit_sessions=200)
+    similar_sessions = await get_similar_session(
+        db,
+        current_prod_ids,
+        current_session_id=user_session_id,
+        limit_sessions=MAX_SESSIONS_SCAN,
+    )
 
     # 5) coletar candidatos das sessões similares
     candidate_counts = Counter()
