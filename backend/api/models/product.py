@@ -1,6 +1,5 @@
 from core.bdConnection import Base
-from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, JSON
 from sqlalchemy.orm import relationship
 
 
@@ -10,7 +9,7 @@ class Product(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     price = Column(Float, nullable=False)
-    color = Column(ARRAY(String), nullable=False)
+    color = Column(JSON, nullable=False, default=list)
     category = Column(String, nullable=False)
     size = Column(String, nullable=False)
     description = Column(String, nullable=False)

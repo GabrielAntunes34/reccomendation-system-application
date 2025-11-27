@@ -1,20 +1,24 @@
-from typing import List
-from typing import Optional
+from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+
+
+class Color(BaseModel):
+    name: str
+    hex: str
 
 
 class ProductBase(BaseModel):
-    """Classe base para definir o tipo User em memória"""
+    """Classe base para definir o tipo Product em memória"""
 
     name: str
     price: float
-    color: List[str]
+    color: List[Color]
     category: str
     size: str
     description: str
     image: str
-    model: str  # nao sei porque isso é um inteiro...
+    model: str
     collection_id: int
 
 
@@ -29,7 +33,6 @@ class Product(ProductBase):
 
     id: int
 
-    # Permitindo a leitura do ORM
     class Config:
         from_attributes = True
 
@@ -39,7 +42,7 @@ class ProductUpdate(BaseModel):
 
     name: Optional[str] = None
     price: Optional[float] = None
-    color: Optional[List[str]] = None
+    color: Optional[List[Color]] = None
     category: Optional[str] = None
     size: Optional[str] = None
     description: Optional[str] = None

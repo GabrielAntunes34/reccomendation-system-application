@@ -8,6 +8,29 @@ export const apiClient = axios.create({
     "Content-Type": "application/json",
   },
 });
+let currentToken: string | null = null;
+
+export const setAuthToken = (token?: string) => {
+  currentToken = token ?? null;
+  if (token) {
+    apiClient.defaults.headers.common.Authorization = `Bearer ${token}`;
+  } else {
+    delete apiClient.defaults.headers.common.Authorization;
+  }
+};
+
+export const getAuthToken = () => currentToken;
+
+export const getSessionIdFromToken = (): number | null => {
+  if (!currentToken) return null;
+  try {
+    const payload = JSON.parse(atob(currentToken.split(".")[1]));
+    return payload?.session_id ?? null;
+  } catch (err) {
+    console.error("Erro ao decodificar token", err);
+    return null;
+  }
+};
 
 apiClient.interceptors.response.use(
   (response) => response,
@@ -17,7 +40,9 @@ apiClient.interceptors.response.use(
       error?.response?.statusText ||
       error?.message ||
       "Erro ao chamar a API";
-    return Promise.reject(new Error(message));
+    const err = new Error(message) as Error & { status?: number };
+    err.status = error?.response?.status;
+    return Promise.reject(err);
   },
 );
 
@@ -43,6 +68,10 @@ export const productApi = {
   remove: (id: string) => api.delete(`/products/${id}`),
 };
 
+export const authApi = {
+  login: (phone_nmr: string) => api.post<{ access_token: string }>("/auth/login", { phone_nmr }),
+};
+
 export const userApi = {
   create: (data: unknown) => api.post("/users", data),
   get: (id: string) => api.get(`/users/${id}`),
@@ -59,8 +88,17 @@ export const collectionApi = {
 
 export const interactionApi = {
   create: (data: unknown) => api.post("/interactions", data),
-  get: (userId: string | number, productId: string | number) =>
-    api.get(`/interactions/${userId}/${productId}`),
-  update: (userId: string | number, productId: string | number, data: unknown) =>
-    api.patch(`/interactions/${userId}/${productId}`, data),
+  get: (userId: string | number, productId: string | number, sessionId: string | number) =>
+    api.get(`/interactions/${userId}/${productId}/${sessionId}`),
+  update: (
+    userId: string | number,
+    productId: string | number,
+    sessionId: string | number,
+    data: unknown,
+  ) => api.patch(`/interactions/${userId}/${productId}/${sessionId}`, data),
+};
+
+export const recommendationApi = {
+  list: (productId?: string | number) =>
+    api.get("/recommendations", { params: productId ? { product_id: productId } : undefined }),
 };

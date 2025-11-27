@@ -14,6 +14,7 @@ from routers.collection import router as collection_router
 from routers.interaction import router as interaction_router
 from routers.product import router as product_router
 from routers.user import router as user_router
+from routers.recommendation import router as recommendation_router
 
 
 @asynccontextmanager
@@ -37,11 +38,22 @@ app = FastAPI(
 )
 
 # Configuração de CORS para permitir o frontend (ajuste via env se precisar)
+# Permite múltiplas origens separadas por vírgula. Se usar "*", desativa credenciais.
 frontend_origin = config("FRONTEND_ORIGIN", default="http://localhost:5173")
+origins = [o.strip() for o in frontend_origin.split(",") if o.strip()]
+origin_regex = None
+allow_credentials = True
+if "*" in origins:
+    # Starlette não permite allow_credentials=True com "*"; usamos regex e desativamos credenciais
+    origins = []
+    origin_regex = ".*"
+    allow_credentials = False
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_origin],
-    allow_credentials=True,
+    allow_origins=origins,
+    allow_origin_regex=origin_regex,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -52,3 +64,4 @@ app.include_router(product_router, prefix="/products", tags=["Product"])
 app.include_router(collection_router, prefix="/collections", tags=["Collection"])
 app.include_router(interaction_router, prefix="/interactions", tags=["Interaction"])
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+app.include_router(recommendation_router, prefix="/recommendations")

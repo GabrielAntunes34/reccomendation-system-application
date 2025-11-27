@@ -5,7 +5,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def create_user(db: AsyncSession, data: UserCreate):
-    """Controller da rota que regitra um novo produto na base de dados"""
+    """Cria um usuário ou retorna o já existente para o mesmo phone_nmr."""
+
+    # Idempotente: se já existe o número, retorna o usuário existente
+    existing = await db.execute(
+        select(UserModel).where(UserModel.phone_nmr == data.phone_nmr)
+    )
+    existing_user = existing.scalar_one_or_none()
+    if existing_user:
+        return existing_user
 
     user = UserModel(**data.model_dump())
     db.add(user)

@@ -52,6 +52,7 @@ async def get_current_user(
     try:
         payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("id")
+        session_id = payload.get("session_id")
 
         if not user_id:
             raise HTTPException(401, "Invalid token")
@@ -63,5 +64,6 @@ async def get_current_user(
 
     if not user:
         raise HTTPException(401, "User not found")
-
+    
+    user.session_id = session_id
     return user

@@ -23,7 +23,7 @@ type ApiProduct = {
   price: number;
   image: string;
   category: string;
-  color: string[];
+  color: { name: string; hex: string }[];
   size: string;
   description: string;
   model: string;
@@ -38,7 +38,7 @@ type Product = {
   price: number;
   image: string;
   category: string;
-  colors: string[];
+  colors: { name: string; hex: string }[];
   sizes: string[];
   description: string;
   collection?: string;
@@ -74,7 +74,12 @@ export default function ProductsManagement() {
             price: p.price,
             image: p.image,
             category: p.category,
-            colors: Array.isArray(p.color) ? p.color : [],
+            colors: Array.isArray(p.color)
+              ? p.color.map((c: any, idx) => ({
+                  name: c?.name ?? `Cor ${idx + 1}`,
+                  hex: c?.hex ?? String(c ?? "#000000"),
+                }))
+              : [],
             sizes: p.size ? p.size.split(',').map((s) => s.trim()).filter(Boolean) : ['Único'],
             description: p.description,
             collection: colName,
@@ -142,7 +147,12 @@ export default function ProductsManagement() {
         price: saved.price,
         image: saved.image,
         category: saved.category,
-        colors: Array.isArray(saved.color) ? saved.color : [],
+        colors: Array.isArray(saved.color)
+          ? saved.color.map((c: any, idx) => ({
+              name: c?.name ?? `Cor ${idx + 1}`,
+              hex: c?.hex ?? String(c ?? "#000000"),
+            }))
+          : [],
         sizes: saved.size ? saved.size.split(',').map((s) => s.trim()).filter(Boolean) : ['Único'],
         description: saved.description,
         collection: collections.find((c) => c.id === saved.collection_id)?.name,

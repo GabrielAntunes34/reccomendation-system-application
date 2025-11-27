@@ -4,9 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageCircle, Heart } from "lucide-react";
 import type { Product } from "./ProductCard";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { RecommendedProducts } from "./RecommendedProducts";
-import { getRecommendedProducts } from "@/utils/recommendations";
+import { fetchRecommendedProducts } from "@/utils/recommendations";
 import { isFavorite as isFavoriteStored, toggleFavorite } from "@/utils/favorites";
 
 interface ProductDetailModalProps {
@@ -18,6 +18,7 @@ interface ProductDetailModalProps {
   onFavoriteChange?: (productId: string, liked: boolean) => void;
   onContact?: (productId: string) => void;
   onProductView?: (productId: string) => void;
+  onAuthRequired?: () => void;
 }
 
 export function ProductDetailModal({
@@ -29,21 +30,27 @@ export function ProductDetailModal({
   onFavoriteChange,
   onContact,
   onProductView,
+  onAuthRequired,
 }: ProductDetailModalProps) {
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [isFavorite, setIsFavorite] = useState(false);
-
-  const recommendedProducts = useMemo(
-    () => (product ? getRecommendedProducts(product, allProducts) : []),
-    [product, allProducts],
-  );
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     if (!product) return;
     setSelectedColor("");
     setSelectedSize("");
     setIsFavorite(isFavoriteStored(product.id));
+    let active = true;
+    const load = async () => {
+      const recs = await fetchRecommendedProducts(product, allProducts, 4, onAuthRequired);
+      if (active) setRecommendedProducts(recs);
+    };
+    load();
+    return () => {
+      active = false;
+    };
   }, [product?.id, product]);
 
   if (!product) return null;
@@ -126,13 +133,14 @@ export function ProductDetailModal({
                       {product.colors.map((color, index) => (
                         <button
                           key={index}
-                          onClick={() => setSelectedColor(color)}
+                          onClick={() => setSelectedColor(color.name)}
                           className={`w-10 h-10 rounded-full border-2 transition-smooth shadow-sm cursor-pointer ${
-                            selectedColor === color
+                            selectedColor === color.name
                               ? "border-primary ring-2 ring-primary/30 scale-110"
                               : "border-card ring-1 ring-border/20 hover:scale-105"
                           }`}
-                          style={{ backgroundColor: color }}
+                          style={{ backgroundColor: color.hex }}
+                          title={color.name}
                         />
                       ))}
                     </div>

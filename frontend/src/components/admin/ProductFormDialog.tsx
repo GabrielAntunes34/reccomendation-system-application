@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
+import type { ColorOption } from '../ProductCard';
 
 export type AdminProductFormData = {
   id?: string;
@@ -23,7 +24,7 @@ export type AdminProductFormData = {
   collectionId?: number;
   collection?: string;
   image: string;
-  colors: string[];
+  colors: ColorOption[];
   sizes: string[];
   model?: string;
 };
@@ -46,11 +47,12 @@ export function ProductFormDialog({ open, onOpenChange, product, onSubmit, colle
     category: '',
     collectionId: '',
     image: '',
-    colors: [] as string[],
+    colors: [] as ColorOption[],
     sizes: [] as string[],
     model: 'manual',
   });
-  const [newColor, setNewColor] = useState('#000000');
+  const [newColorName, setNewColorName] = useState('');
+  const [newColorHex, setNewColorHex] = useState('#000000');
   const [newSize, setNewSize] = useState('');
 
   useEffect(() => {
@@ -102,7 +104,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSubmit, colle
       category: formData.category,
       collectionId: Number(formData.collectionId),
       image: formData.image || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b',
-      colors: formData.colors.length > 0 ? formData.colors : ['#000000'],
+      colors: formData.colors.length > 0 ? formData.colors : [{ name: 'Preto', hex: '#000000' }],
       sizes: formData.sizes.length > 0 ? formData.sizes : ['U'],
       model: formData.model || 'manual',
     };
@@ -111,13 +113,17 @@ export function ProductFormDialog({ open, onOpenChange, product, onSubmit, colle
   };
 
   const addColor = () => {
-    if (!formData.colors.includes(newColor)) {
-      setFormData({ ...formData, colors: [...formData.colors, newColor] });
+    const name = newColorName.trim();
+    if (!name || !newColorHex) return;
+    const exists = formData.colors.some((c) => c.name.toLowerCase() === name.toLowerCase());
+    if (!exists) {
+      setFormData({ ...formData, colors: [...formData.colors, { name, hex: newColorHex }] });
+      setNewColorName('');
     }
   };
 
   const removeColor = (color: string) => {
-    setFormData({ ...formData, colors: formData.colors.filter(c => c !== color) });
+    setFormData({ ...formData, colors: formData.colors.filter(c => c.name !== color) });
   };
 
   const addSize = () => {
@@ -255,11 +261,17 @@ export function ProductFormDialog({ open, onOpenChange, product, onSubmit, colle
           {/* Colors */}
           <div className="space-y-3">
             <Label>Cores Disponíveis</Label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
+              <Input
+                placeholder="Nome da cor (ex: Azul Marinho)"
+                value={newColorName}
+                onChange={(e:any) => setNewColorName(e.target.value)}
+                className="flex-1 min-w-[180px]"
+              />
               <Input
                 type="color"
-                value={newColor}
-                onChange={(e:any) => setNewColor(e.target.value)}
+                value={newColorHex}
+                onChange={(e:any) => setNewColorHex(e.target.value)}
                 className="w-20"
               />
               <Button type="button" onClick={addColor} variant="outline" size="sm">
@@ -268,15 +280,17 @@ export function ProductFormDialog({ open, onOpenChange, product, onSubmit, colle
             </div>
             <div className="flex flex-wrap gap-2">
               {formData.colors.map((color) => (
-                <div key={color} className="relative group">
-                  <div
-                    className="w-10 h-10 rounded-full border-2 border-border"
-                    style={{ backgroundColor: color }}
+                <div key={color.name} className="relative group flex items-center gap-2 px-2 py-1 rounded-full border border-border/60">
+                  <span
+                    className="w-6 h-6 rounded-full border"
+                    style={{ backgroundColor: color.hex }}
+                    title={color.name}
                   />
+                  <span className="text-sm">{color.name}</span>
                   <button
                     type="button"
-                    onClick={() => removeColor(color)}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-smooth flex items-center justify-center"
+                    onClick={() => removeColor(color.name)}
+                    className="w-5 h-5 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-smooth flex items-center justify-center"
                   >
                     <X className="w-3 h-3" />
                   </button>

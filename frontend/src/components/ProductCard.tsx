@@ -4,13 +4,15 @@ import { Heart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { isFavorite as isFavoriteStored, toggleFavorite } from "@/utils/favorites";
 
+export type ColorOption = { name: string; hex: string };
+
 export interface Product {
   id: string;
   name: string;
   price: number;
   image: string;
   category: string;
-  colors: string[];
+  colors: ColorOption[];
   sizes: string[];
   description: string;
   collection?: string;
@@ -75,7 +77,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             <div
               key={index}
               className="w-6 h-6 rounded-full border-2 border-card shadow-sm ring-1 ring-border/20"
-              style={{ backgroundColor: color }}
+              style={{ backgroundColor: color.hex }}
             />
           ))}
           {product.colors.length > 4 && (

@@ -3,8 +3,15 @@ import { WhatsAppModal } from "@/components/WhatsAppModal";
 import { ProductCard } from "@/components/ProductCard";
 import type { Product } from "@/components/ProductCard";
 import { ProductDetailModal } from "@/components/ProductDetailModal";
-import { products as fallbackProducts } from "@/data/products";
-import { productApi, collectionApi, userApi, interactionApi } from "@/lib/api";
+import {
+  productApi,
+  collectionApi,
+  userApi,
+  interactionApi,
+  authApi,
+  setAuthToken,
+  getSessionIdFromToken,
+} from "@/lib/api";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -21,7 +28,7 @@ type ApiProduct = {
   price: number;
   image: string;
   category: string;
-  color: string[];
+  color: { name: string; hex: string }[];
   size: string;
   description: string;
   model: string;
@@ -34,32 +41,37 @@ type ApiCollection = {
 };
 
 const Index = () => {
-  const [showWhatsAppModal, setShowWhatsAppModal] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return !localStorage.getItem("whatsapp_phone");
-  });
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [userId, setUserId] = useState<number | null>(() => {
-    const stored = localStorage.getItem("user_id");
-    return stored ? Number(stored) : null;
-  });
+  const [userId, setUserId] = useState<number | null>(null);
+  const [sessionId, setSessionId] = useState<number | null>(null);
+
+  const clearAuthState = () => {
+    setAuthToken(undefined);
+    setUserId(null);
+    setSessionId(null);
+    setShowWhatsAppModal(true);
+  };
   const [catalog, setCatalog] = useState<Product[]>([]);
   const [collections, setCollections] = useState<ApiCollection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const handlePhoneSubmit = async (phone: string) => {
-    localStorage.setItem("whatsapp_phone", phone);
     setShowWhatsAppModal(false);
     try {
       const created = await userApi.create({ name: "Cliente", phone_nmr: phone }) as { id?: number };
       if (created && created.id) {
         setUserId(created.id);
-        localStorage.setItem("user_id", String(created.id));
+        const login = await authApi.login(phone);
+        setAuthToken(login.access_token);
+        const decodedSession = getSessionIdFromToken();
+        setSessionId(decodedSession);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro ao registrar usuário";
       toast.error(message);
+      clearAuthState();
     }
   };
 
@@ -70,7 +82,12 @@ const Index = () => {
       price: p.price,
       image: p.image,
       category: p.category,
-      colors: Array.isArray(p.color) ? p.color : [],
+      colors: Array.isArray(p.color)
+        ? p.color.map((c: any, idx) => ({
+            name: c?.name ?? `Cor ${idx + 1}`,
+            hex: c?.hex ?? String(c ?? "#000000"),
+          }))
+        : [],
       sizes: p.size
         ? p.size.split(",").map((s) => s.trim()).filter(Boolean)
         : ["Único"],
@@ -132,9 +149,9 @@ const Index = () => {
   }, [collections, catalog]);
 
   const getInteraction = async (productId: string) => {
-    if (!userId) return null;
+    if (!userId || !sessionId) return null;
     try {
-      const current = await interactionApi.get(userId, productId);
+      const current = await interactionApi.get(userId, productId, sessionId);
       return current as { times_viewed?: number; liked?: boolean; contacted?: boolean };
     } catch {
       return null;
@@ -142,12 +159,12 @@ const Index = () => {
   };
 
   const recordView = async (productId: string) => {
-    if (!userId) return;
+    if (!userId || !sessionId) return;
     try {
       const current = await getInteraction(productId);
       const times = (current?.times_viewed ?? 0) + 1;
       if (current) {
-        await interactionApi.update(userId, productId, {
+        await interactionApi.update(userId, productId, sessionId, {
           times_viewed: times,
           liked: current?.liked ?? false,
           contacted: current?.contacted ?? false,
@@ -156,6 +173,7 @@ const Index = () => {
         await interactionApi.create({
           user_id: userId,
           product_id: Number(productId),
+          session_id: sessionId,
           times_viewed: times,
           liked: false,
           contacted: false,
@@ -167,11 +185,11 @@ const Index = () => {
   };
 
   const recordFavorite = async (productId: string, liked: boolean) => {
-    if (!userId) return;
+    if (!userId || !sessionId) return;
     try {
       const current = await getInteraction(productId);
       if (current) {
-        await interactionApi.update(userId, productId, {
+        await interactionApi.update(userId, productId, sessionId, {
           times_viewed: current?.times_viewed ?? 1,
           liked,
           contacted: current?.contacted ?? false,
@@ -180,6 +198,7 @@ const Index = () => {
         await interactionApi.create({
           user_id: userId,
           product_id: Number(productId),
+          session_id: sessionId,
           times_viewed: 1,
           liked,
           contacted: false,
@@ -191,11 +210,11 @@ const Index = () => {
   };
 
   const recordContact = async (productId: string) => {
-    if (!userId) return;
+    if (!userId || !sessionId) return;
     try {
       const current = await getInteraction(productId);
       if (current) {
-        await interactionApi.update(userId, productId, {
+        await interactionApi.update(userId, productId, sessionId, {
           times_viewed: current?.times_viewed ?? 1,
           liked: current?.liked ?? false,
           contacted: true,
@@ -204,6 +223,7 @@ const Index = () => {
         await interactionApi.create({
           user_id: userId,
           product_id: Number(productId),
+          session_id: sessionId,
           times_viewed: 1,
           liked: false,
           contacted: true,
@@ -317,6 +337,10 @@ const Index = () => {
                         <ProductCard
                           product={product}
                           onClick={() => {
+                            if (!sessionId) {
+                              clearAuthState();
+                              return;
+                            }
                             setSelectedProduct(product);
                             recordView(product.id);
                           }}
@@ -348,6 +372,7 @@ const Index = () => {
         onFavoriteChange={recordFavorite}
         onContact={recordContact}
         onProductView={recordView}
+        onAuthRequired={clearAuthState}
       />
     </>
   );
