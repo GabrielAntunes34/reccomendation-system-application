@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
-BASE_URL="http://localhost:3000/products"
-COLLECTIONS=(1 2 3)  # 1=Novidades, 2=Mais Vendidos, 3=Ofertas
+set -euo pipefail
+
+API_ROOT="http://localhost:3000"
+BASE_URL="$API_ROOT/products"
+COLLECTIONS_URL="$API_ROOT/collections"
+COLLECTION_NAMES=("Novidades" "Mais Vendidos" "Ofertas")
+COLLECTIONS=() # preenchido dinamicamente abaixo
 
 CATEGORIES=("Vestidos" "Blusas & Camisetas" "Calças & Saias" "Calçados" "Bolsas" "Acessórios")
 
@@ -33,10 +38,62 @@ DESCS=(
 
 TOTAL=60   # quantos produtos você quer gerar
 
-# cria coleções base antes de popular produtos (ignora erro se já existirem)
-curl -s -X POST http://localhost:3000/collections -H "Content-Type: application/json" -d '{"name":"Novidades","quantity":0}' > /dev/null
-curl -s -X POST http://localhost:3000/collections -H "Content-Type: application/json" -d '{"name":"Mais Vendidos","quantity":0}' > /dev/null
-curl -s -X POST http://localhost:3000/collections -H "Content-Type: application/json" -d '{"name":"Ofertas","quantity":0}' > /dev/null
+# Busca ou cria coleções sem causar erro de chave duplicada
+ensure_collections() {
+  local existing_json
+  existing_json=$(curl -s "$COLLECTIONS_URL")
+
+  declare -A COLLECTION_IDS
+
+  for name in "${COLLECTION_NAMES[@]}"; do
+    # tenta pegar ID existente pelo nome
+    local id
+    id=$(JSON_INPUT="$existing_json" python3 - "$name" <<'PY'
+import sys, json, os
+name = sys.argv[1]
+try:
+    data = json.loads(os.environ.get("JSON_INPUT") or "[]")
+except Exception:
+    data = []
+for item in data or []:
+    if item.get("name") == name:
+        print(item.get("id", ""))
+        sys.exit(0)
+PY
+)
+
+    # se não existir, cria
+    if [ -z "$id" ]; then
+      response=$(curl -s -X POST "$COLLECTIONS_URL" \
+        -H "Content-Type: application/json" \
+        -d "{\"name\":\"$name\",\"quantity\":0}" )
+      id=$(python3 - <<'PY' <<<"$response"
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    print(data.get("id", ""))
+except Exception:
+    sys.exit(1)
+PY
+)
+    fi
+
+    if [ -z "$id" ]; then
+      echo "Não foi possível obter/criar a coleção: $name" >&2
+      exit 1
+    fi
+
+    COLLECTION_IDS["$name"]="$id"
+  done
+
+  COLLECTIONS=(
+    "${COLLECTION_IDS["Novidades"]}"
+    "${COLLECTION_IDS["Mais Vendidos"]}"
+    "${COLLECTION_IDS["Ofertas"]}"
+  )
+}
+
+ensure_collections
 
 
 # catálogos de imagens por categoria (randomiza entre as opções listadas nos comentários acima)
@@ -130,22 +187,46 @@ for ((i=1; i<=TOTAL; i++)); do
   prefix=$(echo "$category" | cut -c1-4 | tr '[:lower:]' '[:upper:]' | tr 'ÇÃÂÁÀÉÊÍÓÔÕÚÜ ' '-')
   model="${prefix}-$(printf "%03d" $i)"
 
-  # preço aleatório entre 59.90 e 299.90
-  price=$(awk -v min=59.90 -v max=299.90 'BEGIN{srand(); print sprintf("%.2f", min + rand()*(max-min))}')
+  # preço aleatório entre 59.90 e 299.90 (ponto decimal garantido)
+  price=$(python3 - <<'PY'
+import random
+print(f"{random.uniform(59.90, 299.90):.2f}")
+PY
+)
 
-  curl -s -X POST "$BASE_URL" \
-    -H "Content-Type: application/json" \
-    -d "{
-      \"name\": \"$name\",
-      \"price\": $price,
-      \"color\": [{\"name\": \"$color\", \"hex\": \"$hex\"}],
-      \"category\": \"$category\",
-      \"size\": \"$size\",
-      \"description\": \"$desc\",
-      \"image\": \"$image\",
-      \"model\": \"$model\",
-      \"collection_id\": $collection_id
-    }" > /dev/null
+  # monta payload JSON de forma segura
+  payload=$(NAME="$name" PRICE="$price" COLOR="$color" HEX="$hex" CATEGORY="$category" SIZE="$size" DESC="$desc" IMAGE="$image" MODEL="$model" COLLECTION="$collection_id" python3 - <<'PY'
+import json, os
+payload = {
+    "name": os.environ["NAME"],
+    "price": float(os.environ["PRICE"]),
+    "color": [{"name": os.environ["COLOR"], "hex": os.environ["HEX"]}],
+    "category": os.environ["CATEGORY"],
+    "size": os.environ["SIZE"],
+    "description": os.environ["DESC"],
+    "image": os.environ["IMAGE"],
+    "model": os.environ["MODEL"],
+    "collection_id": int(os.environ["COLLECTION"]),
+}
+print(json.dumps(payload))
+PY
+)
 
+  response_file=$(mktemp)
+  http_code=$(
+    curl -s -o "$response_file" -w "%{http_code}" \
+      -X POST "$BASE_URL" \
+      -H "Content-Type: application/json" \
+      -d "$payload"
+  )
+
+  if [[ "$http_code" != "200" && "$http_code" != "201" ]]; then
+    echo "Falha ao criar produto #$i (HTTP $http_code):"
+    cat "$response_file"
+    rm -f "$response_file"
+    exit 1
+  fi
+
+  rm -f "$response_file"
   echo "Criado: $name ($category) – coleção $collection_id"
 done
